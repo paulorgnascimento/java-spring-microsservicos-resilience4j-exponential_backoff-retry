@@ -13,7 +13,7 @@ public class IntegracaoService {
         this.integracaoGateway = integracaoGateway;
     }
 
-    public Integracao execute(int id) {
+    public Integracao consultar(int id) {
         return integracaoGateway.getTodoById(id);
     }
 }

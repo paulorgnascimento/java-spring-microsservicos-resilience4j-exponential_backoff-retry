@@ -6,13 +6,16 @@ import com.paulorgnascimento.cleanarchitecture.application.mapper.AgregadoMapper
 import com.paulorgnascimento.cleanarchitecture.application.mapper.EntidadeMapper;
 import com.paulorgnascimento.cleanarchitecture.domain.aggregateroot.Agregado;
 import com.paulorgnascimento.cleanarchitecture.domain.entity.Entidade;
+import com.paulorgnascimento.cleanarchitecture.infrastructure.config.RetryConfigBuilder;
 import com.paulorgnascimento.cleanarchitecture.infrastructure.gateway.Integracao;
 import com.paulorgnascimento.cleanarchitecture.infrastructure.persistence.entity.AgregadoMapping;
 import com.paulorgnascimento.cleanarchitecture.infrastructure.persistence.entity.EntidadeMapping;
 import com.paulorgnascimento.cleanarchitecture.infrastructure.persistence.repository.AgregadoRepository;
 import com.paulorgnascimento.cleanarchitecture.infrastructure.persistence.repository.EntidadeRepository;
+import io.github.resilience4j.retry.RetryConfig;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import io.github.resilience4j.retry.Retry;
 
 import java.util.Optional;
 
@@ -40,7 +43,11 @@ public class AgregadoServiceImpl implements AgregadoService {
     @Override
     @Transactional
     public void criarAgregado(AgregadoInDto agregadoInDto) {
-        Integracao integracao = integracaoService.execute(1);
+        RetryConfig retryConfig = RetryConfigBuilder.defaultConfig();
+        Retry retry = Retry.of("id", retryConfig);
+
+        Integracao integracao = Retry.decorateSupplier(retry, () -> integracaoService.consultar(1)).get();
+
         Agregado agregado = agregadoMapper.fromDto(agregadoInDto);
         AgregadoMapping agregadoMapping = agregadoMapper.toEntity(agregado);
         agregadoRepository.save(agregadoMapping);
